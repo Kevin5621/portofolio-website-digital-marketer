@@ -2,20 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 240 30% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 25% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 25% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 263 90% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 25% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 25% 12%;
+    --muted-foreground: 240 10% 70%;
+    --accent: 263 90% 51%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 25% 12%;
+    --input: 240 25% 12%;
+    --ring: 263 90% 51%;
+    --radius: 0.5rem;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    @apply bg-background text-white font-inter;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-space;
+  }
+}
+
+.galaxy-gradient {
+  background: linear-gradient(
+    45deg,
+    rgba(255, 0, 255, 0.2),
+    rgba(0, 255, 255, 0.2)
+  );
+  filter: blur(100px);
+  mix-blend-mode: screen;
+}
+
+.wormhole {
+  position: relative;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.quantum-text {
+  background: linear-gradient(
+    90deg,
+    #FF00FF,
+    #00FFFF,
+    #FF00FF
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: quantum-flow 3s linear infinite;
+}
+
+@keyframes quantum-flow {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.cursor-black-hole {
+  cursor: none;
+}
+
+.cursor-black-hole::after {
+  content: '';
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }

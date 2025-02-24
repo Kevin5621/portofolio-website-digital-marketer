@@ -9,9 +9,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        primary: {
+          purple: "#7C3AED",
+          blue: "#3B82F6"
+        },
+        secondary: "#FF6B6B",
+        background: "#0F172A"
       },
+      fontFamily: {
+        'space': ['Space Grotesk', 'sans-serif'],
+        'inter': ['Inter', 'sans-serif']
+      }
     },
   },
   plugins: [],
