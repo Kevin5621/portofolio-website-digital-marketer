@@ -37,6 +37,21 @@
   }
 }
 
+* {
+  user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -moz-user-select: none;
+}
+
+html {
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
 .galaxy-gradient {
   background: linear-gradient(
     45deg,

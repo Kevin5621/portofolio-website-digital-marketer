@@ -157,9 +157,10 @@ export function PortfolioGrid() {
 
   const categories = ["all", "Social Media", "Video", "Design"];
 
-  const filteredProjects = projects.filter(
-    (project) => filter === "all" || project.category === filter
-  );
+  // Modify to show no projects when "all" is selected
+  const filteredProjects = filter === "all" 
+    ? [] 
+    : projects.filter(project => project.category === filter);
 
   // Modifikasi filtered projects untuk paginasi
   const paginatedProjects = filteredProjects.slice(
@@ -175,6 +176,7 @@ export function PortfolioGrid() {
   
     // Focus camera on selected category's planet
     focusCameraOnCategory(filter);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, galaxyInitialized]);
   
   // Initialize Galaxy
@@ -188,6 +190,7 @@ export function PortfolioGrid() {
     }, 100);
     
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Animation loop
@@ -412,7 +415,7 @@ export function PortfolioGrid() {
       categoryPlanets.current.set("all", sunData);
     }
     
-    // Create planets for each category
+    // Create planets for each category with click interaction
     categories.forEach(category => {
       if (category === "all") return; // Skip "all" as it's the sun
       
@@ -432,6 +435,45 @@ export function PortfolioGrid() {
     controls.enableZoom = true;
     controls.target.set(0, 0, 0);
     controlsRef.current = controls;
+    
+    // Add raycaster for planet interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    // Add click event listener to the canvas
+    renderer.domElement.addEventListener('click', (event) => {
+      // Get mouse position
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      // Update the raycaster
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Get all meshes in the scene that are planets
+      const planetMeshes: THREE.Object3D[] = [];
+      categories.forEach(category => {
+        const planetData = categoryPlanets.current.get(category);
+        if (planetData && planetData.planetRef) {
+          planetMeshes.push(planetData.planetRef);
+        }
+      });
+      
+      // Check for intersections
+      const intersects = raycaster.intersectObjects(planetMeshes);
+      
+      if (intersects.length > 0) {
+        // Find which category this planet belongs to
+        for (const [category, data] of categoryPlanets.current.entries()) {
+          if (data.planetRef === intersects[0].object) {
+            // Set the filter to this category
+            setFilter(category);
+            setCurrentPage(1); // Reset page when changing categories
+            break;
+          }
+        }
+      }
+    });
     
     // Helper function to create planets for categories
     function createPlanet(category: string, planetData: PlanetData) {
@@ -568,63 +610,88 @@ export function PortfolioGrid() {
           <span className="gradient-text">Featured Works</span>
         </h2>
 
-        <div className="flex justify-center gap-4 mb-12">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => {
-                setFilter(category);
-                setCurrentPage(1); // Reset halaman saat filter berubah
-              }}
-              className={`px-6 py-2 rounded-full transition-all ${
-                filter === category
-                  ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        <motion.div
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
-        >
-          {paginatedProjects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onClick={() => setSelectedProject(project)}
-            />
-          ))}
-        </motion.div>
-        
-        {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-8 gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 rounded bg-gray-800 text-white disabled:opacity-50"
-            >
-              Sebelumnya
-            </button>
-            
-            <div className="flex items-center px-4">
-              <span className="text-white">
-                {currentPage} dari {totalPages}
-              </span>
-            </div>
-            
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 rounded bg-gray-800 text-white disabled:opacity-50"
-            >
-              Selanjutnya
-            </button>
+        {/* Add instruction for users on initial screen */}
+        {filter === "all" && (
+          <div className="text-center text-white mb-12 animate-pulse">
+            <p className="text-xl">Click on any planet to explore projects</p>
           </div>
+        )}
+
+        {/* Only show category buttons for non-"all" filter */}
+        {filter !== "all" && (
+          <div className="flex justify-center gap-4 mb-12">
+            <button
+              onClick={() => {
+                setFilter("all");
+                setCurrentPage(1);
+              }}
+              className="px-6 py-2 rounded-full transition-all bg-gray-800 text-gray-400 hover:text-white"
+            >
+              Back to Galaxy
+            </button>
+            
+            {categories.slice(1).map((category) => (
+              <button
+                key={category}
+                onClick={() => {
+                  setFilter(category);
+                  setCurrentPage(1);
+                }}
+                className={`px-6 py-2 rounded-full transition-all ${
+                  filter === category
+                    ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white"
+                    : "bg-gray-800 text-gray-400 hover:text-white"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Only render projects if filter is not "all" */}
+        {filter !== "all" && (
+          <>
+            <motion.div
+              layout
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+            >
+              {paginatedProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onClick={() => setSelectedProject(project)}
+                />
+              ))}
+            </motion.div>
+            
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded bg-gray-800 text-white disabled:opacity-50"
+                >
+                  Sebelumnya
+                </button>
+                
+                <div className="flex items-center px-4">
+                  <span className="text-white">
+                    {currentPage} dari {totalPages}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded bg-gray-800 text-white disabled:opacity-50"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {selectedProject && (
