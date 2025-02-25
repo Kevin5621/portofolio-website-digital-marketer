@@ -1,14 +1,14 @@
 "use client"
 
-import { ServicesSection } from "@/components/services";
 import { Navbar } from "@/components/navbar";
+import AboutMe from "@/components/about-me";
 
 export default function ServicesPage() {
   return (
     <main className="relative w-full">
       <Navbar />
       <div className="pt-16">
-        <ServicesSection />
+        <AboutMe />
       </div>
     </main>
   );

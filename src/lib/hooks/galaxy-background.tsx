@@ -341,7 +341,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
       const angle = branchAngle + spinAngle;
       
       // Determine how close to the spiral arm this gas cloud is
-      const armIntensity = getArmIntensity(r, angle, branchIndex);
+      const armIntensity = getArmIntensity(r, angle);
       
       // Adjustable randomness based on arm intensity
       const randomFactor = 0.3 * (1 - armIntensity);

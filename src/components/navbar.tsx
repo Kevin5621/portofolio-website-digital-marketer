@@ -11,10 +11,10 @@ export function Navbar() {
   const routes = [
     { path: "/hero", label: "Home" },
     { path: "/portofolio", label: "Portofolio" },
-    { path: "/services", label: "Layanan" },
-    { path: "/process", label: "Proses" },
+    { path: "/about-me", label: "About Me" },
+    { path: "/process", label: "Process" },
     { path: "/testimonials", label: "Testimoni" },
-    { path: "/contact", label: "Kontak" },
+    { path: "/contact", label: "Contact" },
   ];
 
   return (
