@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { HeroSection } from "@/components/hero";
 import { GalaxyBackground } from "@/lib/hooks/galaxy-background";
 import { useRouter } from "next/navigation";
+import { Navbar } from "@/components/navbar";
 
 export default function HeroPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +46,9 @@ export default function HeroPage() {
           Entering Creative Singularity...
         </motion.h1>
       </motion.div>
+      
+      {/* Navbar */}
+      {!isLoading && <Navbar />}
 
       {/* 3D Background */}
       <div 
@@ -96,7 +100,7 @@ export default function HeroPage() {
 
       {/* Hero Content */}
       <div className="relative z-10 pointer-events-none">
-        <HeroSection onExplore={() => router.push('/content')} triggerZoom={handleTriggerZoom} />
+        <HeroSection onExplore={() => router.push('/portofolio')} triggerZoom={handleTriggerZoom} />
       </div>
 
       {/* Ambient Background Gradient */}
