@@ -1,21 +1,12 @@
 "use client"
 
-import { ContactSection } from "@/components/contact";
-import { PortfolioGrid } from "@/components/portofolio";
-import { ProcessWave } from "@/components/process";
-import { ServicesSection } from "@/components/services";
-import { TestimonialCarousel } from "@/components/testimoni";
+import { PortfolioGrid } from "@/components/portofolio/portofolio";
 
-export default function ContentPage() {
+export default function ProcessPage() {
   return (
     <main className="relative w-full">
-      {/* Main Content */}
-      <div className="relative z-10">
+      <div>
         <PortfolioGrid />
-        <ProcessWave />
-        <ServicesSection />
-        <TestimonialCarousel />
-        <ContactSection />
       </div>
     </main>
   );
