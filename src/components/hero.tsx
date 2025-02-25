@@ -2,13 +2,27 @@
 
 import { motion } from 'framer-motion';
 import { Binary } from 'lucide-react';
+import { useState } from 'react';
 
 // Definisikan interface untuk props
 interface HeroSectionProps {
   onExplore: () => void;
+  triggerZoom: (isZooming: boolean) => void;
 }
 
-export function HeroSection({ onExplore }: HeroSectionProps) {
+export function HeroSection({ onExplore, triggerZoom }: HeroSectionProps) {
+  const [isZooming, setIsZooming] = useState(false);
+  
+  const handleExplore = () => {
+    setIsZooming(true);
+    triggerZoom(true);
+    
+    // After animation completes, call onExplore to navigate
+    setTimeout(() => {
+      onExplore();
+    }, 1750); // Match this with animation duration
+  };
+
   return (
     <div 
       className="wormhole min-h-screen flex items-center justify-center relative"
@@ -16,8 +30,15 @@ export function HeroSection({ onExplore }: HeroSectionProps) {
     >
       <motion.div
         initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 2 }}
+        animate={{ 
+          opacity: isZooming ? 0 : 1, 
+          y: isZooming ? -50 : 0,
+          scale: isZooming ? 0.8 : 1
+        }}
+        transition={{ 
+          duration: isZooming ? 1.5 : 1, 
+          delay: isZooming ? 0 : 2 
+        }}
         className="text-center z-10"
       >
         <motion.div
@@ -63,7 +84,8 @@ export function HeroSection({ onExplore }: HeroSectionProps) {
         </motion.p>
 
         <motion.button
-          onClick={onExplore}
+          onClick={handleExplore}
+          disabled={isZooming}
           style={{ pointerEvents: 'auto' }}
           className="bg-primary/20 backdrop-blur-sm hover:bg-primary/30 text-primary-foreground px-8 py-3 rounded-full text-lg font-medium border border-primary/50"
           whileHover={{ 

@@ -11,11 +11,16 @@ import { useRouter } from "next/navigation";
 export default function HeroPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [isZooming, setIsZooming] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 2000);
   }, []);
+
+  const handleTriggerZoom = (zooming: boolean) => {
+    setIsZooming(zooming);
+  };
 
   return (
     <main className="relative w-full">
@@ -45,10 +50,12 @@ export default function HeroPage() {
       <div 
         className={`canvas-container ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
+        } ${isZooming ? 'zooming-to-galaxy' : ''}`}
         onMouseDown={() => setIsDragging(true)}
         onMouseUp={() => setIsDragging(false)}
         onWheel={(e) => {
+          if (isZooming) return; // Disable wheel zoom during animation
+          
           const element = e.currentTarget;
           const className = e.deltaY > 0 ? 'zooming-out' : 'zooming';
           element.classList.add(className);
@@ -62,14 +69,15 @@ export default function HeroPage() {
       >
         <Canvas camera={{ position: [0, 0, 100], fov: 60 }}>
           <OrbitControls
-            enableZoom={true}
-            enablePan={true}
+            enableZoom={!isZooming}
+            enablePan={!isZooming}
+            enableRotate={!isZooming}
             rotateSpeed={0.5}
             zoomSpeed={0.8}
             panSpeed={0.5}
             dampingFactor={0.1}
-            minDistance={10}
-            maxDistance={25}
+            minDistance={20}
+            maxDistance={100}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 1.5}
           />
@@ -80,21 +88,34 @@ export default function HeroPage() {
             factor={4}
             saturation={0}
             fade
-            speed={1}
+            speed={isZooming ? 2 : 1}
           />
-          <GalaxyBackground />
+          <GalaxyBackground isZooming={isZooming} />
         </Canvas>
       </div>
 
       {/* Hero Content */}
       <div className="relative z-10 pointer-events-none">
-        <HeroSection onExplore={() => router.push('/content')} />
+        <HeroSection onExplore={() => router.push('/content')} triggerZoom={handleTriggerZoom} />
       </div>
 
       {/* Ambient Background Gradient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 galaxy-gradient" />
       </div>
+      
+      {/* Zoom Effect Overlay */}
+      {isZooming && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.7 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5 }}
+          className="fixed inset-0 z-20 pointer-events-none"
+        >
+          <div className="absolute inset-0 warp-speed-overlay" />
+        </motion.div>
+      )}
     </main>
   );
 }

@@ -148,3 +148,67 @@ canvas {
 .canvas-container.panning {
   cursor: move;
 }
+
+.zooming-to-galaxy {
+  transition: transform 2s ease-in-out;
+}
+
+.warp-speed-overlay {
+  background: radial-gradient(circle at center, transparent 0%, rgba(124, 58, 237, 0.2) 50%, rgba(0, 0, 64, 0.7) 100%);
+  mix-blend-mode: screen;
+  animation: warpPulse 1.5s ease-in-out forwards;
+}
+
+@keyframes warpPulse {
+  0% {
+    background-size: 100% 100%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    background-size: 500% 500%;
+    opacity: 0.7;
+  }
+}
+
+/* Star streaking effect during zoom */
+.canvas-container.zooming-to-galaxy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to bottom, 
+      transparent 0%, 
+      transparent 45%, 
+      rgba(255, 255, 255, 0.1) 50%, 
+      transparent 55%, 
+      transparent 100%),
+    linear-gradient(to right, 
+      transparent 0%, 
+      transparent 45%, 
+      rgba(255, 255, 255, 0.1) 50%, 
+      transparent 55%, 
+      transparent 100%);
+  background-size: 100% 4px, 4px 100%;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  animation: streakIn 2s ease-in forwards;
+}
+
+@keyframes streakIn {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3);
+  }
+}

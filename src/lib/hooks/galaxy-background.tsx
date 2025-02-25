@@ -1,13 +1,28 @@
 "use client"
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function GalaxyBackground() {
+interface GalaxyBackgroundProps {
+  isZooming?: boolean;
+}
+
+export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
   const starsRef = useRef<THREE.Points>(null);
   const gasCloudRef = useRef<THREE.Points>(null);
   const darkMatterRef = useRef<THREE.Points>(null);
+  const [] = useState(100);
+  const [zoomStartTime, setZoomStartTime] = useState<number | null>(null);
+
+  // Track when zooming state changes
+  useEffect(() => {
+    if (isZooming) {
+      setZoomStartTime(Date.now());
+    } else {
+      setZoomStartTime(null);
+    }
+  }, [isZooming]);
 
   // Enhanced galaxy parameters
   const galaxyParams = useMemo(() => ({
@@ -300,11 +315,11 @@ export function GalaxyBackground() {
     return { geometry, material };
   }, [galaxyParams, textures]);
 
-  // Animation with differential rotation
-  useFrame(({ clock, pointer }) => {
+  // Animation with differential rotation and zoom effect
+  useFrame(({ clock, pointer, camera }) => {
     const elapsedTime = clock.getElapsedTime();
     
-    // Rotasi dasar
+    // Basic rotation
     if (starsRef.current) {
       starsRef.current.rotation.y = elapsedTime * 0.05;
     }
@@ -315,11 +330,11 @@ export function GalaxyBackground() {
       darkMatterRef.current.rotation.y = elapsedTime * 0.02;
     }
 
-    // Matikan atau kurangi efek parallax yang mungkin mengganggu OrbitControls
+    // Handle parallax effect
     const parallaxX = pointer.x * 0.1;
     const parallaxY = pointer.y * 0.1;
 
-    // Gunakan lerp yang lebih lambat agar tidak mengganggu OrbitControls
+    // Use slow lerp to not interfere with OrbitControls
     if (starsRef.current) {
       starsRef.current.position.x += (parallaxX - starsRef.current.position.x) * 0.01;
       starsRef.current.position.y += (parallaxY - starsRef.current.position.y) * 0.01;
@@ -331,6 +346,37 @@ export function GalaxyBackground() {
     if (darkMatterRef.current) {
       darkMatterRef.current.position.x += (parallaxX * 0.8 - darkMatterRef.current.position.x) * 0.01;
       darkMatterRef.current.position.y += (parallaxY * 0.8 - darkMatterRef.current.position.y) * 0.01;
+    }
+    
+    // Handle zoom effect if we're zooming
+    if (isZooming && zoomStartTime) {
+      const now = Date.now();
+      const elapsed = (now - zoomStartTime) / 1000; // Convert to seconds
+      const zoomDuration = 2; // 2 seconds for zoom animation
+      
+      if (elapsed < zoomDuration) {
+        // Calculate new camera position
+        const zoomProgress = elapsed / zoomDuration;
+        const targetZ = 15; // Final camera Z position (close to galaxy)
+        const newZ = 100 - (100 - targetZ) * zoomProgress;
+        
+        // Update camera position
+        camera.position.z = newZ;
+        
+        // Increase star brightness during zoom
+        if (starsRef.current?.material) {
+          (starsRef.current.material as THREE.PointsMaterial).opacity = 
+            Math.min(1, galaxyParams.opacity + zoomProgress * 0.4);
+        }
+        
+        // Increase rotation speed during zoom
+        if (starsRef.current) {
+          starsRef.current.rotation.y += 0.003 * zoomProgress;
+        }
+        if (gasCloudRef.current) {
+          gasCloudRef.current.rotation.y += 0.004 * zoomProgress;
+        }
+      }
     }
   });
   
