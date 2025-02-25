@@ -221,30 +221,34 @@ export function PortfolioGrid() {
   const updateCameraFollowPlanet = (planetData: PlanetData) => {
     if (!controlsRef.current || !cameraRef.current || !planetData.position) return;
     
-    // Update the orbit controls target to follow the planet
-    controlsRef.current.target.copy(planetData.position);
+    // Update the orbit controls target to follow the planet with smooth damping
+    controlsRef.current.target.lerp(planetData.position, 0.02);
     
-    // Calculate a position offset from the planet for the camera
-    const offsetDistance = planetData.size * 5;
+    // Only adjust camera position if we're not manually controlling
+    if (!controlsRef.current.enabled) return;
     
-    // Get the planet's world position and rotation
-    const planetWorldPosition = planetData.position.clone();
+    // Maintain consistent distance from planet
+    const currentDistance = cameraRef.current.position.distanceTo(controlsRef.current.target);
+    const desiredDistance = planetData.size * 8;
     
-    // Calculate a position for the camera based on the planet's orbit
-    const orbitAngle = planetData.orbitObject?.rotation.y || 0;
+    // If we're roughly at the right distance, don't adjust further
+    // This prevents camera "bouncing" when user has manually zoomed
+    if (Math.abs(currentDistance - desiredDistance) < 0.1) return;
     
-    // Position the camera to follow behind the planet in its orbit
-    const cameraOffset = new THREE.Vector3(
-      Math.cos(orbitAngle - Math.PI/4) * offsetDistance,
-      planetData.size * 3, // Slightly above the planet
-      Math.sin(orbitAngle - Math.PI/4) * offsetDistance
+    // Get current direction from target to camera
+    const direction = new THREE.Vector3().subVectors(
+      cameraRef.current.position,
+      controlsRef.current.target
+    ).normalize();
+    
+    // Calculate ideal position at desired distance
+    const idealPosition = new THREE.Vector3().addVectors(
+      planetData.position,
+      direction.multiplyScalar(desiredDistance)
     );
     
-    // Smoothly move camera to new position
-    cameraRef.current.position.lerp(
-      planetWorldPosition.clone().add(cameraOffset),
-      0.05
-    );
+    // Very gradually adjust camera position (subtle zoom correction)
+    cameraRef.current.position.lerp(idealPosition, 0.01);
   };
 
   // Function to focus camera on a specific category's planet
@@ -257,7 +261,7 @@ export function PortfolioGrid() {
     // Create a camera target position
     let targetPosition;
     let targetLookAt;
-    
+        
     if (category === "all") {
       // For "all" category, view the entire system
       targetPosition = new THREE.Vector3(0, 15, 30);
@@ -268,12 +272,23 @@ export function PortfolioGrid() {
     } else if (planetData.position) {
       // For specific category, position camera to view that planet
       const planetPos = planetData.position;
-      // Position camera at an offset from the planet
+      
+      // Calculate desired distance for this planet based on its size
+      const desiredDistance = planetData.size * 8;
+      
+      // Get current camera direction (normalized)
+      const currentDirection = new THREE.Vector3().subVectors(
+        cameraRef.current.position,
+        controlsRef.current.target
+      ).normalize();
+      
+      // Position camera at correct distance from the planet, preserving viewing angle
       targetPosition = new THREE.Vector3(
-        planetPos.x * 1.5, 
-        planetPos.y + 5, 
-        planetPos.z * 1.5
+        planetPos.x + currentDirection.x * desiredDistance,
+        planetPos.y + currentDirection.y * desiredDistance + (planetData.size * 2), // Add slight height offset
+        planetPos.z + currentDirection.z * desiredDistance
       );
+      
       targetLookAt = planetPos;
     } else {
       return;
@@ -283,7 +298,13 @@ export function PortfolioGrid() {
     const currentPos = cameraRef.current.position.clone();
     const currentTarget = controlsRef.current.target.clone();
     let startTime = 0;
-    const duration = 1000; // milliseconds
+    
+    // Adjust duration based on distance to travel for more consistent speed
+    const distanceToTravel = currentPos.distanceTo(targetPosition);
+    const duration = Math.min(2000 + distanceToTravel * 50, 4000); // Base 2s plus distance factor, max 4s
+    
+    // Disable controls during transition
+    controlsRef.current.enabled = false;
     
     const animateCamera = (timestamp: number) => {
       if (!cameraRef.current || !controlsRef.current) return;
@@ -292,10 +313,10 @@ export function PortfolioGrid() {
       const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Use easing function for smoother transition
-      const easeProgress = easeInOutCubic(progress);
+      // Use a smoother easing function
+      const easeProgress = easeInOutQuintic(progress);
       
-      // Update camera position
+      // Update camera position with smoother interpolation
       cameraRef.current.position.lerpVectors(currentPos, targetPosition, easeProgress);
       
       // Update controls target (what the camera looks at)
@@ -304,17 +325,30 @@ export function PortfolioGrid() {
       
       if (progress < 1) {
         requestAnimationFrame(animateCamera);
+      } else {
+        // Re-enable controls after transition
+        controlsRef.current.enabled = true;
+        
+        // If we're focusing on a specific planet, adjust the min/max distance for zooming
+        if (category !== "all" && planetData) {
+          controlsRef.current.minDistance = planetData.size * 3;
+          controlsRef.current.maxDistance = planetData.size * 20;
+        } else {
+          // Default zoom constraints for solar system view
+          controlsRef.current.minDistance = 5;
+          controlsRef.current.maxDistance = 100;
+        }
       }
     };
     
     requestAnimationFrame(animateCamera);
-  }, [cameraRef, controlsRef, categoryPlanets]);
+  }, []);
   
   // Easing function for smooth camera movement
-  const easeInOutCubic = (t: number): number => {
+  const easeInOutQuintic = (t: number): number => {
     return t < 0.5
-      ? 4 * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      ? 16 * t * t * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 5) / 2;
   };
 
   // Initialize Three.js scene
@@ -386,10 +420,11 @@ export function PortfolioGrid() {
     // Add controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enableZoom = true;
-    controls.target.set(0, 0, 0);
-    controlsRef.current = controls;
+    controls.dampingFactor = 0.1; 
+    controls.rotateSpeed = 0.5; 
+    controls.zoomSpeed = 0.8; 
+    controls.minDistance = 5;
+    controls.maxDistance = 25;
     
     // Add raycaster for planet interaction
     const raycaster = new THREE.Raycaster();
@@ -589,7 +624,7 @@ export function PortfolioGrid() {
               }}
               className="px-6 py-2 rounded-full transition-all bg-gray-800 text-gray-400 hover:text-white"
             >
-              Back to Galaxy
+              Back to solar system
             </button>
             
             {categories.slice(1).map((category) => (
