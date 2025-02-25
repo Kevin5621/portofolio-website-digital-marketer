@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 import { HeroSection } from "@/components/hero";
 import { GalaxyBackground } from "@/lib/hooks/galaxy-background";
 import { useRouter } from "next/navigation";
-import { Navbar } from "@/components/navbar";
 
 export default function HeroPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -46,9 +45,6 @@ export default function HeroPage() {
           Entering Creative Singularity...
         </motion.h1>
       </motion.div>
-      
-      {/* Navbar */}
-      {!isLoading && <Navbar />}
 
       {/* 3D Background */}
       <div 
