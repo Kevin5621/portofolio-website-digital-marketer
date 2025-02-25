@@ -20,7 +20,7 @@ interface Project {
 const projects: Project[] = [
   {
     id: "1",
-    title: "Brand Campaign",
+    title: "Ortist Spesialist",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -29,7 +29,7 @@ const projects: Project[] = [
   },
   {
     id: "2",
-    title: "Brand Campaign",
+    title: "Binjasimen Samapta",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -38,7 +38,7 @@ const projects: Project[] = [
   },
   {
     id: "3",
-    title: "Brand Campaign",
+    title: "Rumah Bahasa Asing",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -47,7 +47,7 @@ const projects: Project[] = [
   },
   {
     id: "4",
-    title: "Brand Campaign",
+    title: "Kronju",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -56,7 +56,7 @@ const projects: Project[] = [
   },
   {
     id: "5",
-    title: "Brand Campaign",
+    title: "Aerospace",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -65,52 +65,7 @@ const projects: Project[] = [
   },
   {
     id: "6",
-    title: "Brand Campaign",
-    category: "Social Media",
-    thumbnail: "/projects/campaign.jpg",
-    description: "Kampanye digital untuk brand lifestyle",
-    tools: ["Figma", "After Effects", "Facebook Ads"],
-    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
-  },
-  {
-    id: "7",
-    title: "Brand Campaign",
-    category: "Social Media",
-    thumbnail: "/projects/campaign.jpg",
-    description: "Kampanye digital untuk brand lifestyle",
-    tools: ["Figma", "After Effects", "Facebook Ads"],
-    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
-  },
-  {
-    id: "8",
-    title: "Brand Campaign",
-    category: "Social Media",
-    thumbnail: "/projects/campaign.jpg",
-    description: "Kampanye digital untuk brand lifestyle",
-    tools: ["Figma", "After Effects", "Facebook Ads"],
-    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
-  },
-  {
-    id: "9",
-    title: "Brand Campaign",
-    category: "Social Media",
-    thumbnail: "/projects/campaign.jpg",
-    description: "Kampanye digital untuk brand lifestyle",
-    tools: ["Figma", "After Effects", "Facebook Ads"],
-    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
-  },
-  {
-    id: "10",
-    title: "Brand Campaign",
-    category: "Social Media",
-    thumbnail: "/projects/campaign.jpg",
-    description: "Kampanye digital untuk brand lifestyle",
-    tools: ["Figma", "After Effects", "Facebook Ads"],
-    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
-  },
-  {
-    id: "11",
-    title: "Brand Campaign",
+    title: "Shinji Film",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -599,6 +554,13 @@ export function PortfolioGrid() {
   };
 
   return (
+    <motion.div
+      initial={{ scale: 0.3, filter: "blur(30px)", opacity: 0 }}
+      animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
+      exit={{ scale: 1.5, filter: "blur(15px)", opacity: 0 }}
+      transition={{ duration: 1.2, ease: "easeOut" }}
+      className="relative w-full h-full"
+    >
     <section className="relative min-h-screen">
       <div 
         ref={galaxyRef} 
@@ -649,7 +611,6 @@ export function PortfolioGrid() {
           </div>
         )}
 
-        {/* Only render projects if filter is not "all" */}
         {filter !== "all" && (
           <>
             <motion.div
@@ -703,4 +664,5 @@ export function PortfolioGrid() {
       </div>
     </section>
   );
+  </motion.div>)
 }
