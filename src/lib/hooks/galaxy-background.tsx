@@ -12,30 +12,30 @@ export function GalaxyBackground() {
   // Enhanced galaxy parameters
   const galaxyParams = useMemo(() => ({
     // Stars parameters
-    starsCount: 100000, // Increased number of stars
-    starSize: 0.05,
-    radius: 20,
-    branches: 5,
-    spin: 1,
-    randomness: 0.2,
-    randomnessPower: 3,
-    insideColor: '#ff8a00', // More reddish/yellow for older stars in the center
-    outsideColor: '#4287f5', // More bluish for younger stars in the outer regions
-    opacity: 1.0,
+    starsCount: 150000,
+    starSize: 0.03,
+    radius: 25,
+    branches: 4,
+    spin: 1.5,
+    randomness: 0.15,
+    randomnessPower: 2.5,
+    insideColor: '#ffb74d',
+    outsideColor: '#e3f2fd',
+    opacity: 0.8,
     
     // Gas and dust parameters
-    gasCount: 50000,
-    gasSize: 0.08,
-    gasOpacity: 0.4,
-    gasColor: '#8a9ef5', // Bluish for hydrogen gas
-    dustColor: '#a63c06', // Reddish brown for dust
+    gasCount: 80000,
+    gasSize: 0.12,
+    gasOpacity: 0.3,
+    gasColor: '#cfd8dc', 
+    dustColor: '#ff8a65',
     
     // Dark matter parameters
-    darkMatterCount: 30000,
-    darkMatterSize: 0.03,
-    darkMatterRadius: 30, // Extends beyond visible galaxy
-    darkMatterOpacity: 0.15,
-    darkMatterColor: '#ffffff'
+    darkMatterCount: 40000,
+    darkMatterSize: 0.02,
+    darkMatterRadius: 35,
+    darkMatterOpacity: 0.1,
+    darkMatterColor: '#b0bec5'
   }), []);
   
   // Create star texture function
@@ -125,10 +125,6 @@ export function GalaxyBackground() {
     const colorInside = new THREE.Color(insideColor);
     const colorOutside = new THREE.Color(outsideColor);
 
-    // Star size variation factors
-    const minStarSize = galaxyParams.starSize * 0.5;
-    const maxStarSize = galaxyParams.starSize * 2.0;
-
     for (let i = 0; i < starsCount; i++) {
       const i3 = i * 3;
       
@@ -209,30 +205,31 @@ export function GalaxyBackground() {
       
       // Make gas clouds follow arms more closely
       const branchIndex = Math.floor(Math.random() * branches);
-      const branchAngle = (branchIndex / branches) * Math.PI * 2;
+      const branchOffset = (Math.random() - 0.5) * 0.3; // Offset lebih kecil
+      const branchAngle = ((branchIndex + branchOffset) / branches) * Math.PI * 2;
       
-      // Less randomness for gas - it's more concentrated in the arms
-      const randomness = galaxyParams.randomness * 0.7;
-      const randomX = Math.pow(Math.random(), 2) * (Math.random() < 0.5 ? 1 : -1) * randomness * r;
-      const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * randomness * r * 0.3;
-      const randomZ = Math.pow(Math.random(), 2) * (Math.random() < 0.5 ? 1 : -1) * randomness * r;
+      const randomness = galaxyParams.randomness * 0.5; // Randomness dikurangi
+      const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * randomness * r;
+      const randomY = Math.pow(Math.random(), 4) * (Math.random() < 0.5 ? 1 : -1) * randomness * r * 0.2;
+      const randomZ = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * randomness * r;
 
       // Position gas clouds
       positions[i3] = Math.cos(branchAngle + spinAngle) * r + randomX;
-      positions[i3 + 1] = randomY; // Gas is thinner than stars
+      positions[i3 + 1] = randomY;
       positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + randomZ;
       
-      // Color gas/dust - hydrogen gas (blue) vs dust (reddish brown)
-      if (Math.random() > 0.3) { // 70% gas, 30% dust
-        // Hydrogen gas (blueish)
-        colors[i3] = gasCloudColor.r;
-        colors[i3 + 1] = gasCloudColor.g;
+      // Gradien warna berdasarkan jarak
+      const mixFactor = r / radius;
+      if (Math.random() > 0.4) {
+        // Gas putih kebiruan
+        colors[i3] = gasCloudColor.r * (1 - mixFactor * 0.2);
+        colors[i3 + 1] = gasCloudColor.g * (1 - mixFactor * 0.1);
         colors[i3 + 2] = gasCloudColor.b;
       } else {
-        // Dust (reddish brown)
+        // Debu kemerahan
         colors[i3] = dustCloudColor.r;
-        colors[i3 + 1] = dustCloudColor.g;
-        colors[i3 + 2] = dustCloudColor.b;
+        colors[i3 + 1] = dustCloudColor.g * (1 - mixFactor * 0.3);
+        colors[i3 + 2] = dustCloudColor.b * (1 - mixFactor * 0.5);
       }
     }
     
@@ -304,21 +301,36 @@ export function GalaxyBackground() {
   }, [galaxyParams, textures]);
 
   // Animation with differential rotation
-  useFrame(() => {
+  useFrame(({ clock, pointer }) => {
+    const elapsedTime = clock.getElapsedTime();
+    
+    // Rotasi dasar
     if (starsRef.current) {
-      // Stars rotate at different speeds based on distance from center
-      starsRef.current.rotation.y += 0.0003;
-      starsRef.current.rotation.z += 0.0001;
+      starsRef.current.rotation.y = elapsedTime * 0.05;
     }
     if (gasCloudRef.current) {
-      // Gas rotates slightly faster than stars
-      gasCloudRef.current.rotation.y += 0.0004;
-      gasCloudRef.current.rotation.z += 0.00005;
+      gasCloudRef.current.rotation.y = elapsedTime * 0.06;
     }
     if (darkMatterRef.current) {
-      // Dark matter rotates more slowly
-      darkMatterRef.current.rotation.y += 0.0001;
-      darkMatterRef.current.rotation.z += 0.00002;
+      darkMatterRef.current.rotation.y = elapsedTime * 0.02;
+    }
+
+    // Matikan atau kurangi efek parallax yang mungkin mengganggu OrbitControls
+    const parallaxX = pointer.x * 0.1;
+    const parallaxY = pointer.y * 0.1;
+
+    // Gunakan lerp yang lebih lambat agar tidak mengganggu OrbitControls
+    if (starsRef.current) {
+      starsRef.current.position.x += (parallaxX - starsRef.current.position.x) * 0.01;
+      starsRef.current.position.y += (parallaxY - starsRef.current.position.y) * 0.01;
+    }
+    if (gasCloudRef.current) {
+      gasCloudRef.current.position.x += (parallaxX * 1.2 - gasCloudRef.current.position.x) * 0.01;
+      gasCloudRef.current.position.y += (parallaxY * 1.2 - gasCloudRef.current.position.y) * 0.01;
+    }
+    if (darkMatterRef.current) {
+      darkMatterRef.current.position.x += (parallaxX * 0.8 - darkMatterRef.current.position.x) * 0.01;
+      darkMatterRef.current.position.y += (parallaxY * 0.8 - darkMatterRef.current.position.y) * 0.01;
     }
   });
   

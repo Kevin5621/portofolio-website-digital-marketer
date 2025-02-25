@@ -47,10 +47,22 @@
   mix-blend-mode: screen;
 }
 
-.wormhole {
-  position: relative;
-  perspective: 1000px;
-  transform-style: preserve-3d;
+.wormhole::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wormhole::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .quantum-text {
@@ -93,4 +105,46 @@
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }
   100% { transform: scale(1); }
+}
+
+.wormhole {
+  pointer-events: none !important;
+}
+
+.wormhole button {
+  pointer-events: auto !important;
+}
+
+/* Memperbaiki z-index untuk memastikan kontrol bekerja */
+.canvas-container {
+  @apply fixed inset-0;
+  z-index: 0;
+}
+
+/* Ini penting untuk memastikan OrbitControls dapat menangkap event */
+canvas {
+  touch-action: none !important;
+}
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
+.canvas-container {
+  @apply fixed inset-0;
+}
+
+.canvas-container.zooming {
+  cursor: zoom-in;
+}
+
+.canvas-container.zooming-out {
+  cursor: zoom-out;
+}
+
+.canvas-container.panning {
+  cursor: move;
 }
