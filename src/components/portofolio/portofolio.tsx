@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as THREE from 'three';
 import { ProjectCard } from "./project-card";
 import { ProjectModal } from "./project-modal";
@@ -20,7 +20,7 @@ interface Project {
 const projects: Project[] = [
   {
     id: "1",
-    title: "Ortist Spesialist",
+    title: "Brand Campaign",
     category: "Social Media",
     thumbnail: "/projects/campaign.jpg",
     description: "Kampanye digital untuk brand lifestyle",
@@ -102,6 +102,19 @@ export function PortfolioGrid() {
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 6;
   
+  // Ref for tracking camera transition animation
+  const cameraTransitionRef = useRef({
+    inProgress: false,
+    startTime: 0,
+    duration: 1500, // Longer transition for smoothness (1.5 seconds)
+    startPosition: new THREE.Vector3(),
+    targetPosition: new THREE.Vector3(),
+    startTarget: new THREE.Vector3(),
+    targetTarget: new THREE.Vector3(),
+    followPlanet: false,
+    followCategory: "",
+  });
+  
   // Referensi untuk planet per kategori
   const categoryPlanets = useRef<Map<string, PlanetData>>(new Map([
     ["all", { size: 2, color: 0xffcc33, distance: 0, orbitSpeed: 0, rotationSpeed: 0.002 }],
@@ -129,9 +142,8 @@ export function PortfolioGrid() {
   useEffect(() => {
     if (!galaxyInitialized) return;
   
-    // Focus camera on selected category's planet
-    focusCameraOnCategory(filter);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Focus camera on selected category's planet with smooth transition
+    startCameraTransition(filter);
   }, [filter, galaxyInitialized]);
   
   // Initialize Galaxy
@@ -152,7 +164,7 @@ export function PortfolioGrid() {
   useEffect(() => {
     if (!galaxyInitialized) return;
 
-    const animate = () => {
+    const animate = (timestamp: number) => {
       if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
 
       // Animate sun rotation
@@ -160,7 +172,7 @@ export function PortfolioGrid() {
         sunRef.current.rotation.y += categoryPlanets.current.get("all")?.rotationSpeed || 0.002;
       }
       
-      // Animate planet rotations
+      // Animate planet rotations and update positions
       categoryPlanets.current.forEach((planetData, category) => {
         if (category !== "all" && planetData.planetRef && planetData.orbitObject) {
           // Rotate planets around their own axis
@@ -175,13 +187,81 @@ export function PortfolioGrid() {
               planetData.planetRef.matrixWorld
             );
           }
-          
-          // Update camera if this is the selected category
-          if (category === filter && filter !== "all") {
-            updateCameraFollowPlanet(planetData);
-          }
         }
       });
+      
+      // Handle camera transitions - improved smooth animation
+      const transition = cameraTransitionRef.current;
+      if (transition.inProgress) {
+        if (transition.startTime === 0) {
+          transition.startTime = timestamp;
+        }
+        
+        const elapsed = timestamp - transition.startTime;
+        const progress = Math.min(elapsed / transition.duration, 1);
+        
+        // Smoother easing function
+        const easeProgress = easeInOutQuintic(progress);
+        
+        if (transition.followPlanet && transition.followCategory !== "all") {
+          // Get the current planet position as it's moving
+          const planetData = categoryPlanets.current.get(transition.followCategory);
+          if (planetData && planetData.position) {
+            // Calculate offset position with a trailing effect
+            const planetPos = planetData.position;
+            const orbitAngle = planetData.orbitObject?.rotation.y || 0;
+            const offsetDistance = planetData.size * 5;
+            
+            // Position slightly behind planet in its orbit
+            const cameraOffset = new THREE.Vector3(
+              Math.cos(orbitAngle - Math.PI/4) * offsetDistance,
+              planetData.size * 3, // Slightly above
+              Math.sin(orbitAngle - Math.PI/4) * offsetDistance
+            );
+            
+            // Gradually update target position to follow planet
+            transition.targetPosition = planetPos.clone().add(cameraOffset);
+            transition.targetTarget = planetPos.clone();
+          }
+        }
+        
+        // Update camera position with smoothing
+        cameraRef.current.position.lerpVectors(
+          transition.startPosition, 
+          transition.targetPosition, 
+          easeProgress
+        );
+        
+        // Update controls target (what camera looks at) with smoothing
+        if (controlsRef.current) {
+          controlsRef.current.target.lerpVectors(
+            transition.startTarget,
+            transition.targetTarget,
+            easeProgress
+          );
+          controlsRef.current.update();
+        }
+        
+        // End transition when complete
+        if (progress >= 1) {
+          transition.inProgress = false;
+          transition.startTime = 0;
+          
+          // If we're following a planet, update the camera mode
+          if (transition.followPlanet && transition.followCategory !== "all") {
+            // Keep updating camera in animate loop after transition
+            updateCameraForPlanetFollowing(transition.followCategory);
+          } else if (transition.followCategory === "all") {
+            // For "all" view, disable auto-rotation
+            if (controlsRef.current) {
+              controlsRef.current.autoRotate = false;
+            }
+          }
+        }
+      } else if (filter !== "all") {
+        // Continue to smoothly follow the planet after transition
+        updateCameraForPlanetFollowing(filter);
+      }
 
       // Render scene
       rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -217,138 +297,89 @@ export function PortfolioGrid() {
     return () => window.removeEventListener('resize', handleResize);
   }, [galaxyInitialized]);
 
-  // Function to make camera follow planet rotation
-  const updateCameraFollowPlanet = (planetData: PlanetData) => {
-    if (!controlsRef.current || !cameraRef.current || !planetData.position) return;
-    
-    // Update the orbit controls target to follow the planet with smooth damping
-    controlsRef.current.target.lerp(planetData.position, 0.02);
-    
-    // Only adjust camera position if we're not manually controlling
-    if (!controlsRef.current.enabled) return;
-    
-    // Maintain consistent distance from planet
-    const currentDistance = cameraRef.current.position.distanceTo(controlsRef.current.target);
-    const desiredDistance = planetData.size * 8;
-    
-    // If we're roughly at the right distance, don't adjust further
-    // This prevents camera "bouncing" when user has manually zoomed
-    if (Math.abs(currentDistance - desiredDistance) < 0.1) return;
-    
-    // Get current direction from target to camera
-    const direction = new THREE.Vector3().subVectors(
-      cameraRef.current.position,
-      controlsRef.current.target
-    ).normalize();
-    
-    // Calculate ideal position at desired distance
-    const idealPosition = new THREE.Vector3().addVectors(
-      planetData.position,
-      direction.multiplyScalar(desiredDistance)
-    );
-    
-    // Very gradually adjust camera position (subtle zoom correction)
-    cameraRef.current.position.lerp(idealPosition, 0.01);
+  // Improved easing function for smoother animation
+  const easeInOutQuintic = (t: number): number => {
+    return t < 0.5 
+      ? 16 * t * t * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 5) / 2;
   };
 
-  // Function to focus camera on a specific category's planet
-  const focusCameraOnCategory = useCallback((category: string) => {
-    if (!cameraRef.current || !controlsRef.current) return;
+  // Function to continuously update camera position to follow planet
+  const updateCameraForPlanetFollowing = (category: string) => {
+    if (!controlsRef.current || !cameraRef.current) return;
+    
+    if (category === "all") return;
     
     const planetData = categoryPlanets.current.get(category);
+    if (!planetData || !planetData.position) return;
+    
+    // Get current planet position
+    const planetPos = planetData.position;
+    
+    // Calculate a position with slight delay for smoother following
+    const orbitAngle = planetData.orbitObject?.rotation.y || 0;
+    const offsetDistance = planetData.size * 5;
+    
+    // Create an offset that keeps camera slightly behind the planet in orbit
+    const cameraOffset = new THREE.Vector3(
+      Math.cos(orbitAngle - Math.PI/4) * offsetDistance,
+      planetData.size * 3, // Slightly above
+      Math.sin(orbitAngle - Math.PI/4) * offsetDistance
+    );
+    
+    // Calculate target position for camera
+    const targetCamPos = planetPos.clone().add(cameraOffset);
+    
+    // Smoothly interpolate camera to new position with damping
+    cameraRef.current.position.lerp(targetCamPos, 0.05);
+    
+    // Update where the camera is looking
+    controlsRef.current.target.lerp(planetPos, 0.1);
+  };
+
+  // Function to start a camera transition with improved smoothness
+  const startCameraTransition = (category: string) => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    
+    const transition = cameraTransitionRef.current;
+    const planetData = categoryPlanets.current.get(category);
+    
     if (!planetData) return;
     
-    // Create a camera target position
-    let targetPosition;
-    let targetLookAt;
-        
+    // Save current camera state
+    transition.startPosition = cameraRef.current.position.clone();
+    transition.startTarget = controlsRef.current.target.clone();
+    
+    // Determine target based on category
     if (category === "all") {
-      // For "all" category, view the entire system
-      targetPosition = new THREE.Vector3(0, 15, 30);
-      targetLookAt = new THREE.Vector3(0, 0, 0);
-      
-      // Reset any planet-specific camera following
-      controlsRef.current.autoRotate = false;
+      // View entire system
+      transition.targetPosition = new THREE.Vector3(0, 20, 35);
+      transition.targetTarget = new THREE.Vector3(0, 0, 0);
+      transition.followPlanet = false;
     } else if (planetData.position) {
-      // For specific category, position camera to view that planet
+      // Calculate initial position to view the planet
       const planetPos = planetData.position;
+      const orbitAngle = planetData.orbitObject?.rotation.y || 0;
+      const offsetDistance = planetData.size * 5;
       
-      // Calculate desired distance for this planet based on its size
-      const desiredDistance = planetData.size * 8;
-      
-      // Get current camera direction (normalized)
-      const currentDirection = new THREE.Vector3().subVectors(
-        cameraRef.current.position,
-        controlsRef.current.target
-      ).normalize();
-      
-      // Position camera at correct distance from the planet, preserving viewing angle
-      targetPosition = new THREE.Vector3(
-        planetPos.x + currentDirection.x * desiredDistance,
-        planetPos.y + currentDirection.y * desiredDistance + (planetData.size * 2), // Add slight height offset
-        planetPos.z + currentDirection.z * desiredDistance
+      // Position camera at offset from planet
+      const cameraOffset = new THREE.Vector3(
+        Math.cos(orbitAngle - Math.PI/4) * offsetDistance,
+        planetData.size * 3, // Slightly above
+        Math.sin(orbitAngle - Math.PI/4) * offsetDistance
       );
       
-      targetLookAt = planetPos;
+      transition.targetPosition = planetPos.clone().add(cameraOffset);
+      transition.targetTarget = planetPos.clone();
+      transition.followPlanet = true;
     } else {
       return;
     }
     
-    // Animate camera movement
-    const currentPos = cameraRef.current.position.clone();
-    const currentTarget = controlsRef.current.target.clone();
-    let startTime = 0;
-    
-    // Adjust duration based on distance to travel for more consistent speed
-    const distanceToTravel = currentPos.distanceTo(targetPosition);
-    const duration = Math.min(2000 + distanceToTravel * 50, 4000); // Base 2s plus distance factor, max 4s
-    
-    // Disable controls during transition
-    controlsRef.current.enabled = false;
-    
-    const animateCamera = (timestamp: number) => {
-      if (!cameraRef.current || !controlsRef.current) return;
-      
-      if (startTime === 0) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Use a smoother easing function
-      const easeProgress = easeInOutQuintic(progress);
-      
-      // Update camera position with smoother interpolation
-      cameraRef.current.position.lerpVectors(currentPos, targetPosition, easeProgress);
-      
-      // Update controls target (what the camera looks at)
-      controlsRef.current.target.lerpVectors(currentTarget, targetLookAt, easeProgress);
-      controlsRef.current.update();
-      
-      if (progress < 1) {
-        requestAnimationFrame(animateCamera);
-      } else {
-        // Re-enable controls after transition
-        controlsRef.current.enabled = true;
-        
-        // If we're focusing on a specific planet, adjust the min/max distance for zooming
-        if (category !== "all" && planetData) {
-          controlsRef.current.minDistance = planetData.size * 3;
-          controlsRef.current.maxDistance = planetData.size * 20;
-        } else {
-          // Default zoom constraints for solar system view
-          controlsRef.current.minDistance = 5;
-          controlsRef.current.maxDistance = 100;
-        }
-      }
-    };
-    
-    requestAnimationFrame(animateCamera);
-  }, []);
-  
-  // Easing function for smooth camera movement
-  const easeInOutQuintic = (t: number): number => {
-    return t < 0.5
-      ? 16 * t * t * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 5) / 2;
+    // Set up and start the transition
+    transition.inProgress = true;
+    transition.startTime = 0;
+    transition.followCategory = category;
   };
 
   // Initialize Three.js scene
@@ -417,14 +448,15 @@ export function PortfolioGrid() {
     // Add stars
     createStars();
     
-    // Add controls
+    // Add controls with improved damping for smoother movement
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1; 
-    controls.rotateSpeed = 0.5; 
-    controls.zoomSpeed = 0.8; 
-    controls.minDistance = 5;
-    controls.maxDistance = 25;
+    controls.dampingFactor = 0.1; // Increased for smoother motion
+    controls.rotateSpeed = 0.5; // Slower rotation for smoother feel
+    controls.enableZoom = true;
+    controls.zoomSpeed = 0.5; // Slower zoom for more control
+    controls.target.set(0, 0, 0);
+    controlsRef.current = controls;
     
     // Add raycaster for planet interaction
     const raycaster = new THREE.Raycaster();
@@ -585,17 +617,10 @@ export function PortfolioGrid() {
     }
     
     // Set initial view
-    focusCameraOnCategory("all");
+    startCameraTransition("all");
   };
 
   return (
-    <motion.div
-      initial={{ scale: 0.3, filter: "blur(30px)", opacity: 0 }}
-      animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
-      exit={{ scale: 1.5, filter: "blur(15px)", opacity: 0 }}
-      transition={{ duration: 1.2, ease: "easeOut" }}
-      className="relative w-full h-full"
-    >
     <section className="relative min-h-screen">
       <div 
         ref={galaxyRef} 
@@ -624,7 +649,7 @@ export function PortfolioGrid() {
               }}
               className="px-6 py-2 rounded-full transition-all bg-gray-800 text-gray-400 hover:text-white"
             >
-              Back to solar system
+              Back to Galaxy
             </button>
             
             {categories.slice(1).map((category) => (
@@ -646,6 +671,7 @@ export function PortfolioGrid() {
           </div>
         )}
 
+        {/* Only render projects if filter is not "all" */}
         {filter !== "all" && (
           <>
             <motion.div
@@ -699,5 +725,4 @@ export function PortfolioGrid() {
       </div>
     </section>
   );
-  </motion.div>)
 }
