@@ -66,7 +66,7 @@ export function GalaxyBackground({
   // Enhanced galaxy parameters with more natural settings
   const galaxyParams = useMemo(() => ({
     // Stars parameters
-    starsCount: 350000,
+    starsCount: 150000,
     starSize: 0.022, // Reduced slightly for more delicate stars
     radius: 25,
     branches: 5,
@@ -93,13 +93,13 @@ export function GalaxyBackground({
     darkMatterColor: '#b0bec5',
     
     // Dust lanes parameters
-    dustLanesCount: 100000, 
+    dustLanesCount: 10000, 
     dustLanesSize: 0.11, // Slightly smaller for finer detail
     dustLanesOpacity: 0.38, 
     dustLanesColor: '#3e2723',
     
     // NEW: Star clusters parameters
-    starClustersCount: 65000, // New dense clusters of stars
+    starClustersCount: 35000, // New dense clusters of stars
     starClustersSize: 0.018,
     starClustersOpacity: 0.95,
     starClustersColor: '#fff8e1',

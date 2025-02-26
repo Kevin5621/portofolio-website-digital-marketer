@@ -1,0 +1,58 @@
+import { Project } from '../types';
+
+export const projects: Project[] = [
+  {
+    id: "1",
+    title: "Brand Campaign",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+  {
+    id: "2",
+    title: "Binjasimen Samapta",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+  {
+    id: "3",
+    title: "Rumah Bahasa Asing",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+  {
+    id: "4",
+    title: "Kronju",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+  {
+    id: "5",
+    title: "Aerospace",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+  {
+    id: "6",
+    title: "Shinji Film",
+    category: "Social Media",
+    thumbnail: "/projects/campaign.jpg",
+    description: "Kampanye digital untuk brand lifestyle",
+    tools: ["Figma", "After Effects", "Facebook Ads"],
+    results: ["10x ROI", "1M+ Reach", "50K+ Engagement"],
+  },
+];

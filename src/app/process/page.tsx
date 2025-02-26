@@ -3,7 +3,7 @@
 import { ProcessWave } from "@/components/process";
 import { Navbar } from "@/components/navbar";
 import { motion } from "framer-motion";
-import { Astronaut3D } from "@/lib/hooks/astronaut-3d";
+import { Astronaut3D } from "@/lib/hooks/Planetary";
 
 export default function ProcessPage() {
   return (
