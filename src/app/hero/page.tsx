@@ -7,11 +7,16 @@ import { useState, useEffect } from "react";
 import { HeroSection } from "@/components/hero";
 import { GalaxyBackground } from "@/lib/hooks/galaxy-background";
 import { useRouter } from "next/navigation";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 export default function HeroPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
+  const [] = useState({
+    chromaticAberration: 0.5,
+    bloom: 1.5
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -67,7 +72,7 @@ export default function HeroPage() {
           }, 150);
         }}
       >
-        <Canvas camera={{ position: [0, 0, 100], fov: 60 }}>
+        <Canvas camera={{ position: [0, 0, 100], fov: 30 }}>
           <OrbitControls
             enableZoom={!isZooming}
             enablePan={!isZooming}
@@ -76,21 +81,28 @@ export default function HeroPage() {
             zoomSpeed={0.8}
             panSpeed={0.5}
             dampingFactor={0.1}
-            minDistance={20}
+            minDistance={40}
             maxDistance={100}
             minPolarAngle={Math.PI / 4}
             maxPolarAngle={Math.PI / 1.5}
           />
+          <EffectComposer>
+            <Bloom intensity={1} luminanceThreshold={0.3} luminanceSmoothing={0.9} />
+          </EffectComposer>
           <Stars
-            radius={100}
-            depth={50}
-            count={5000}
-            factor={4}
-            saturation={0}
+            radius={150}
+            depth={5}
+            count={15000}
+            factor={6}
+            saturation={2}
             fade
             speed={isZooming ? 2 : 1}
           />
-          <GalaxyBackground isZooming={isZooming} />
+          <GalaxyBackground 
+            isZooming={isZooming}
+            initialPosition={{ x: 0, y: -1, z: 0 }}
+          />
+          {isZooming}
         </Canvas>
       </div>
 

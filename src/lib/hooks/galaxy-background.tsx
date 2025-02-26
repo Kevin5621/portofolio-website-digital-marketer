@@ -6,14 +6,30 @@ import * as THREE from 'three';
 
 interface GalaxyBackgroundProps {
   isZooming?: boolean;
+  initialPosition?: {
+    x: number;
+    y: number;
+    z: number;
+  };
 }
 
-export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
+export function GalaxyBackground({ 
+  isZooming = false,
+  initialPosition = { x: 0, y: 0, z: 0 } 
+}: GalaxyBackgroundProps) {
   const starsRef = useRef<THREE.Points>(null);
   const gasCloudRef = useRef<THREE.Points>(null);
   const darkMatterRef = useRef<THREE.Points>(null);
   const [zoomStartTime, setZoomStartTime] = useState<number | null>(null);
+  
+  // Track initial position
+  const initialPositionRef = useRef(initialPosition);
 
+  // Update initialPositionRef when prop changes
+  useEffect(() => {
+    initialPositionRef.current = initialPosition;
+  }, [initialPosition]);
+  
   // Track when zooming state changes
   useEffect(() => {
     if (isZooming) {
@@ -23,43 +39,80 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
     }
   }, [isZooming]);
 
+  // Inisialisasi posisi galaxy setelah komponen di-render
+  useEffect(() => {
+    if (starsRef.current && gasCloudRef.current && darkMatterRef.current) {
+      // Set posisi awal untuk semua komponen galaxy
+      starsRef.current.position.set(
+        initialPosition.x,
+        initialPosition.y,
+        initialPosition.z
+      );
+      
+      gasCloudRef.current.position.set(
+        initialPosition.x,
+        initialPosition.y,
+        initialPosition.z
+      );
+      
+      darkMatterRef.current.position.set(
+        initialPosition.x,
+        initialPosition.y,
+        initialPosition.z
+      );
+    }
+  }, [initialPosition]);
+
   // Enhanced galaxy parameters with more natural settings
   const galaxyParams = useMemo(() => ({
     // Stars parameters
-    starsCount: 180000,
-    starSize: 0.025,
+    starsCount: 350000,
+    starSize: 0.022, // Reduced slightly for more delicate stars
     radius: 25,
-    branches: 5, // More branches for more natural look
-    branchesRandomness: 0.3, // Allow branches to vary in position
-    spin: 1.3,
-    randomness: 0.25, // Increased randomness
-    randomnessPower: 2.2, // Adjusted for more natural distribution
+    branches: 5,
+    branchesRandomness: 0.2, // Reduced for more defined arms
+    spin: 1.35,
+    randomness: 0.18, 
+    randomnessPower: 2.4,
     insideColor: '#ffb74d',
     outsideColor: '#e3f2fd',
-    opacity: 0.7,
+    opacity: 0.9,
     
     // Gas and dust parameters
-    gasCount: 100000, // More gas particles
+    gasCount: 180000, 
     gasSize: 0.15,
-    gasOpacity: 0.25,
+    gasOpacity: 0.32, // Slightly increased
     gasColor: '#cfd8dc', 
     dustColor: '#ff8a65',
     
     // Dark matter parameters
-    darkMatterCount: 50000,
-    darkMatterSize: 0.015, // Smaller dark matter particles
-    darkMatterRadius: 40,
-    darkMatterOpacity: 0.08,
+    darkMatterCount: 80000, 
+    darkMatterSize: 0.012, // Smaller particles for subtler effect
+    darkMatterRadius: 42, // Slightly larger halo
+    darkMatterOpacity: 0.07,
     darkMatterColor: '#b0bec5',
     
-    // New parameters for more natural appearance
-    armWidth: 0.8, // Controls how defined the arms appear
-    coreSize: 0.2, // Size of the dense galactic core
-    coreConcentration: 3, // Higher values make more stars in the core
-    diskThickness: 0.6, // How thick the galactic disk is
-    dustConcentration: 2.5, // Higher values concentrate dust more in arms
+    // Dust lanes parameters
+    dustLanesCount: 100000, 
+    dustLanesSize: 0.11, // Slightly smaller for finer detail
+    dustLanesOpacity: 0.38, 
+    dustLanesColor: '#3e2723',
+    
+    // NEW: Star clusters parameters
+    starClustersCount: 65000, // New dense clusters of stars
+    starClustersSize: 0.018,
+    starClustersOpacity: 0.95,
+    starClustersColor: '#fff8e1',
+    
+    // Enhanced parameters for more natural appearance
+    armWidth: 0.65, // Narrower for more definition
+    coreSize: 0.28, 
+    coreConcentration: 3.8, // Higher value for more stars in the core
+    diskThickness: 0.5, // Thinner for more defined disk
+    dustConcentration: 3.2, 
+    interarmDensity: 0.25, // NEW: Controls density between arms
   }), []);
-  
+
   // Create star texture function
   const createStarTexture = () => {
     const canvas = document.createElement('canvas');
@@ -97,7 +150,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
   // Create gas cloud texture function with softer edges
   const createGasTexture = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 64; // Increased size for more detail
+    canvas.width = 64;
     canvas.height = 64;
     
     const context = canvas.getContext('2d');
@@ -220,7 +273,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
 
       // Star positions in galaxy
       positions[i3] = Math.cos(angle) * r + randomX;
-      positions[i3 + 1] = randomY; // Thinner galaxy
+      positions[i3 + 10] = randomY;
       positions[i3 + 2] = Math.sin(angle) * r + randomZ;
       
       // Natural size variation - brighter stars in arms, dimmer ones scattered
@@ -351,7 +404,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
 
       // Position gas clouds
       positions[i3] = Math.cos(angle) * r + randomX;
-      positions[i3 + 1] = randomY * (1 + Math.random());
+      positions[i3 + 10] = randomY * (1 + Math.random());
       positions[i3 + 2] = Math.sin(angle) * r + randomZ;
       
       // Variable sizes for gas clouds - bigger in arms
@@ -455,7 +508,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
       
       // Position in spherical coordinates with some asymmetry
       positions[i3] = radius * Math.sin(phi) * Math.cos(theta) * (1 + 0.1 * (Math.random() - 0.5));
-      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta) * (1 + 0.1 * (Math.random() - 0.5));
+      positions[i3 + 10] = radius * Math.sin(phi) * Math.sin(theta) * (1 + 0.1 * (Math.random() - 0.5));
       positions[i3 + 2] = radius * Math.cos(phi) * (0.7 + 0.6 * Math.random()); // Slight flattening
       
       // Dark matter is represented by dimmer points with distance-based opacity
@@ -510,6 +563,7 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
   // Animation with differential rotation and natural movements
   useFrame(({ clock, pointer, camera }) => {
     const elapsedTime = clock.getElapsedTime();
+    const { x: initialX, y: initialY, z: initialZ } = initialPositionRef.current;
     
     // Organic rotation with slight wobble
     if (starsRef.current) {
@@ -530,39 +584,58 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
     const parallaxY = pointer.y * 0.1;
 
     // Use slow lerp with different speeds for depth effect
+    // Relative to initial position
     if (starsRef.current) {
-      starsRef.current.position.x += (parallaxX - starsRef.current.position.x) * 0.008;
-      starsRef.current.position.y += (parallaxY - starsRef.current.position.y) * 0.008;
+      starsRef.current.position.x += ((initialX + parallaxX) - starsRef.current.position.x) * 0.008;
+      starsRef.current.position.y += ((initialY + parallaxY) - starsRef.current.position.y) * 0.008;
     }
     if (gasCloudRef.current) {
-      gasCloudRef.current.position.x += (parallaxX * 1.3 - gasCloudRef.current.position.x) * 0.006;
-      gasCloudRef.current.position.y += (parallaxY * 1.3 - gasCloudRef.current.position.y) * 0.006;
+      gasCloudRef.current.position.x += ((initialX + parallaxX * 1.3) - gasCloudRef.current.position.x) * 0.006;
+      gasCloudRef.current.position.y += ((initialY + parallaxY * 1.3) - gasCloudRef.current.position.y) * 0.006;
     }
     if (darkMatterRef.current) {
-      darkMatterRef.current.position.x += (parallaxX * 0.7 - darkMatterRef.current.position.x) * 0.01;
-      darkMatterRef.current.position.y += (parallaxY * 0.7 - darkMatterRef.current.position.y) * 0.01;
+      darkMatterRef.current.position.x += ((initialX + parallaxX * 0.7) - darkMatterRef.current.position.x) * 0.01;
+      darkMatterRef.current.position.y += ((initialY + parallaxY * 0.7) - darkMatterRef.current.position.y) * 0.01;
     }
-    
-    // Handle zoom effect with more organic transitions
+
+    // Handle zoom effect with more organic transitions - IMPROVED ZOOM TARGETING
     if (isZooming && zoomStartTime) {
       const now = Date.now();
       const elapsed = (now - zoomStartTime) / 1000; // Convert to seconds
-      const zoomDuration = 3; // 3 seconds for zoom animation (longer for smoother feel)
+      const zoomDuration = 3; // 3 seconds for zoom animation
       
       if (elapsed < zoomDuration) {
         // Calculate zoom progress with easing
         const zoomProgress = easeInOutCubic(Math.min(1, elapsed / zoomDuration));
-        const startZ = 100;
-        const targetZ = 15; // Final camera Z position
         
-        // Update camera position with natural easing
-        camera.position.z = startZ - (startZ - targetZ) * zoomProgress;
+        // Define start and target positions
+        const startPos = {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: 100 // Starting z position
+        };
         
-        // Add slight camera movement during zoom for more dramatic effect
-        camera.position.x = Math.sin(elapsed * 0.5) * 0.5 * zoomProgress;
-        camera.position.y = Math.cos(elapsed * 0.7) * 0.3 * zoomProgress;
+        // Target position is offset from galaxy center for better view
+        const targetPos = {
+          x: initialX,
+          y: initialY,
+          z: initialZ + 15 // Offset to see the galaxy properly
+        };
         
-        // Adjust brightness during zoom
+        // Interpolate camera position towards galaxy
+        camera.position.x = startPos.x + (targetPos.x - startPos.x) * zoomProgress;
+        camera.position.y = startPos.y + (targetPos.y - startPos.y) * zoomProgress;
+        camera.position.z = startPos.z + (targetPos.z - startPos.z) * zoomProgress;
+        
+        // Point camera to look at galaxy center
+        camera.lookAt(initialX, initialY, initialZ);
+        
+        // Add slight dramatic camera movement
+        const wobbleIntensity = 0.3 * (1 - zoomProgress); // Wobble reduces as we get closer
+        camera.position.x += Math.sin(elapsed * 2) * wobbleIntensity;
+        camera.position.y += Math.cos(elapsed * 1.7) * wobbleIntensity;
+        
+        // Adjust brightness during zoom for dramatic effect
         if (starsRef.current?.material) {
           const starMaterial = starsRef.current.material as THREE.ShaderMaterial;
           starMaterial.uniforms.globalOpacity.value = 
@@ -583,6 +656,8 @@ export function GalaxyBackground({ isZooming = false }: GalaxyBackgroundProps) {
           gasCloudRef.current.rotation.y += 0.003 * easeOutQuad(zoomProgress);
         }
       }
+    } else {
+      camera.lookAt(0, 0, 0);
     }
   });
   
